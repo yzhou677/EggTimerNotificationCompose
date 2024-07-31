@@ -1,0 +1,43 @@
+<resources>
+    <string name="app_name">Egg Timer</string>
+    <string name="egg_prompt">How do you like your egg?</string>
+    <string name="timer_on">Start</string>
+    <string name="timer_off">Stop</string>
+    <string name="notification_title">Egg Timer</string>
+    <string name="notification_text">Your egg is ready!!</string>
+
+    <string name="fcm_message">FCM Message</string>
+    <string name="message_subscribe_failed">Failed to subscribe to topic</string>
+    <string name="message_subscribed">Subscribed to topic</string>
+    <string name="egg_notification_channel_id" translatable="false">egg_notification_channel</string>
+    <string name="egg_notification_channel_name" translatable="true">Egg</string>
+    <string name="breakfast_notification_channel_id" translatable="false">fcm_default_channel</string>
+    <string name="breakfast_notification_channel_name" translatable="true">Breakfast</string>
+    <string name="eggs_ready">It is time! Bon appetit!</string>
+    <string name="timer_running">Egg timer is running...</string>
+    <string name="breakfast_notification_channel_description">Breakfast reminder</string>
+    <string name="snooze">Snooze</string>
+    <string name="dismiss">Dismiss</string>
+
+    <string name="custom">Custom</string>
+    <string name="label">Label</string>
+    <string name="custom_timer_minutes">Minutes</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="custom_timer">Custom Timer</string>
+    <string name="custom_timer_label_error">Only letters and numbers are allowed.</string>
+    <string name="custom_timer_minutes_error">Please enter an integer between 1 and 99.</string>
+    <string name="hamburger_menu_shop">Shop</string>
+    <string name="hamburger_menu_recipe">Recipe</string>
+    <string name="sort_price_low_to_high">Price: Low to High</string>
+    <string name="sort_price_high_to_low">Price: High to Low</string>
+    <string name="soft_boiled_info">A soft boiled egg cooked for 4 minutes has a tender white and a runny, bright yellow yolk.</string>
+    <string name="slightly_firmer_info">A slightly firmer egg cooked for 6 minutes has a firmer white and a creamy, partially set yolk.</string>
+    <string name="firm_yolk_info">A firm yolk egg cooked for 10 minutes has a firm white and a fully set, but still moist yolk.</string>
+    <string name="hard_boiled_info">A hard boiled egg cooked for 12 minutes has a solid white and a fully hard-cooked yolk that\'s dry and crumbly.</string>
+    <string name="price_low_to_high">Price: Low to High</string>
+    <string name="price_high_to_low">Price: High to Low</string>
+    <string name="egg_item_for_testing">Test only, better not use it for cooking :)</string>
+    <string name="start_egg_timer">Start Egg Timer</string>
+    <string name="cancel_egg_timer">Cancel Egg Timer</string>
+</resources>

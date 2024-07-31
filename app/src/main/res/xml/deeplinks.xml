@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:id="@+id/starteggtimer_shortcut"
+        android:title="@string/start_egg_timer"
+        android:icon="@drawable/egg_icon">
+    <intent
+        android:action="android.intent.action.VIEW"
+        android:data="eggtimer://eggtimer.com/starteggtimer" />
+    </shortcut>
+</resources>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Temporizador de Huevos</string>
+    <string name="egg_prompt">¿Cómo te gusta tu huevo?</string>
+    <string name="timer_on">Iniciar</string>
+    <string name="timer_off">Detener</string>
+    <string name="notification_title">Temporizador de Huevos</string>
+    <string name="notification_text">¡Tu huevo está listo!</string>
+
+    <string name="fcm_message">Mensaje FCM</string>
+    <string name="message_subscribe_failed">Error al suscribirse al tema</string>
+    <string name="message_subscribed">Suscrito al tema</string>
+    <string name="egg_notification_channel_id" translatable="false">egg_notification_channel</string>
+    <string name="egg_notification_channel_name">Huevo</string>
+    <string name="breakfast_notification_channel_id" translatable="false">fcm_default_channel</string>
+    <string name="breakfast_notification_channel_name">Desayuno</string>
+    <string name="eggs_ready">¡Es la hora! ¡Buen provecho!</string>
+    <string name="timer_running">El temporizador de huevos está funcionando...</string>
+    <string name="breakfast_notification_channel_description">Recordatorio de desayuno</string>
+    <string name="snooze">Posponer</string>
+    <string name="dismiss">Descartar</string>
+
+    <string name="custom">Personalizado</string>
+    <string name="label">Etiqueta</string>
+    <string name="custom_timer_minutes">Minutos</string>
+    <string name="cancel">Cancelar</string>
+    <string name="save">Guardar</string>
+    <string name="custom_timer">Temporizador Personalizado</string>
+    <string name="custom_timer_label_error">Solo se permiten letras y números.</string>
+    <string name="custom_timer_minutes_error">Por favor, ingrese un número entero entre 1 y 99.</string>
+    <string name="hamburger_menu_shop">Tienda</string>
+    <string name="hamburger_menu_recipe">Receta</string>
+    <string name="sort_price_low_to_high">Precio: de menor a mayor</string>
+    <string name="sort_price_high_to_low">Precio: de mayor a menor</string>
+    <string name="soft_boiled_info">Un huevo pasado por agua cocido durante 4 minutos tiene una clara tierna y una yema líquida de color amarillo brillante.</string>
+    <string name="slightly_firmer_info">Un huevo ligeramente más firme cocido durante 6 minutos tiene una clara más firme y una yema cremosa y parcialmente cuajada.</string>
+    <string name="firm_yolk_info">Un huevo con yema firme cocido durante 10 minutos tiene una clara firme y una yema completamente cuajada, pero aún húmeda.</string>
+    <string name="hard_boiled_info">Un huevo duro cocido durante 12 minutos tiene una clara sólida y una yema completamente cocida que es seca y desmenuzable.</string>
+    <string name="price_low_to_high">Precio: de menor a mayor</string>
+    <string name="price_high_to_low">Precio: de mayor a menor</string>
+    <string name="egg_item_for_testing">Solo prueba, mejor no usarlo para cocinar :)</string>
+    <string name="start_egg_timer">Iniciar temporizador de huevos</string>
+    <string name="cancel_egg_timer">Cancelar temporizador de huevos</string>
+</resources>

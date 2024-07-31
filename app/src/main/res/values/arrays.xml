@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="egg_array">
+        <item>Soft Boiled</item>
+        <item>Slightly Firmer</item>
+        <item>Firm Yolk</item>
+        <item>Hard Boiled</item>
+    </string-array>
+
+    <integer-array name="minutes_array">
+        <item>4</item>
+        <item>6</item>
+        <item>10</item>
+        <item>12</item>
+    </integer-array>
+</resources>

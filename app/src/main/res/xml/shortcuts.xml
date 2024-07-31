@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <capability name="egg_timer_actions">
+        <action name="android.intent.action.VIEW">
+            <parameter name="softness_level" type="STRING">
+                <enum value="Soft Boiled" />
+                <enum value="Slightly Firmer" />
+                <enum value="Firm Yolk" />
+                <enum value="Hard Boiled" />
+            </parameter>
+        </action>
+    </capability>
+</resources>
