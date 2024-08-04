@@ -5,6 +5,8 @@ import android.content.res.Resources
 import android.widget.Toast
 import com.example.android.eggtimernotificationcompose.BuildConfig
 import com.example.android.eggtimernotificationcompose.R
+import javax.inject.Inject
+import javax.inject.Singleton
 
 interface TimerAction {
     fun startTimer(timerLengthSelection: Int)
@@ -12,12 +14,14 @@ interface TimerAction {
     fun cancelTimer()
 }
 
-object GoogleAssistantManager {
+@Singleton
+class GoogleAssistantManager @Inject constructor(
+    private val resources: Resources,
+    private val context: Context
+) {
     fun startTimerThroughGoogleAssistant(
         softnessLevel: String,
-        resources: Resources,
         timerAction: TimerAction,
-        context: Context
     ) {
         var timeSelection = resources.getStringArray(R.array.egg_array).indexOf(softnessLevel)
         if (BuildConfig.IS_TESTING) timeSelection++
@@ -26,11 +30,11 @@ object GoogleAssistantManager {
             timerAction.startTimer(timeSelection)
             timerAction.updateLiveDataForTimerStartAction(timeSelection)
         } else {
-            showInvalidSoftnessLevelError(resources, context)
+            showInvalidSoftnessLevelError()
         }
     }
 
-    fun showInvalidSoftnessLevelError(resources: Resources, context: Context) {
+    fun showInvalidSoftnessLevelError() {
         val supportedSoftnessLevels = resources.getStringArray(R.array.egg_array).joinToString(", ")
         val message = "Invalid softness level. Please choose from: $supportedSoftnessLevels"
 

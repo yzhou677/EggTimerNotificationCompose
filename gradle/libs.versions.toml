@@ -4,6 +4,9 @@ kotlin = "1.9.0"
 coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.0"
+mockito = "3.11.2"
+coreTesting = "2.1.0"
+coroutinesTest = "1.5.2"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.2"
 activityCompose = "1.9.0"
@@ -22,6 +25,10 @@ firebaseFirestore = "25.0.0"
 coilCompose = "2.1.0"
 gson = "2.8.9"
 cardview = "1.0.0"
+coreKtxVersion = "1.6.1"
+core = "1.44.0"
+hilt = "2.48"
+hilt_navigation_compose = "1.0.0"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -39,6 +46,9 @@ androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
+androidx-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "coreTesting" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-databinding-common = { group = "androidx.databinding", name = "databinding-common", version.ref = "databindingCommon" }
 androidx-databinding-runtime = { group = "androidx.databinding", name = "databinding-runtime", version.ref = "databindingRuntime" }
@@ -53,9 +63,15 @@ firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 androidx-cardview = { group = "androidx.cardview", name = "cardview", version.ref = "cardview" }
+core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "coreKtxVersion" }
+core = { group = "com.google.ar", name = "core", version.ref = "core" }
+mockk = { group = "io.mockk", name = "mockk", version = "1.12.0" }
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt"}
+hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+androidx_hilt_navigation_compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt_navigation_compose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleServices"}
-
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

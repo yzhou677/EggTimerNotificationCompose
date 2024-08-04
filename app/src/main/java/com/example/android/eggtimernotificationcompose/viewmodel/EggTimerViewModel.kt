@@ -11,25 +11,26 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.*
 import com.example.android.eggtimernotificationcompose.BuildConfig
 import com.example.android.eggtimernotificationcompose.R
+import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
+import com.example.android.eggtimernotificationcompose.di.LastEffectiveTimerSelectionPrefs
 import com.example.android.eggtimernotificationcompose.manager.TimerAction
 import com.example.android.eggtimernotificationcompose.model.CustomTimer
 import com.example.android.eggtimernotificationcompose.receiver.AlarmReceiver
 import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
+import javax.inject.Inject
 
-class EggTimerViewModel(private val app: Application) : AndroidViewModel(app), TimerAction {
-    companion object {
-        @Volatile
-        private var INSTANCE: EggTimerViewModel? = null
-
-        fun getInstance(app: Application): EggTimerViewModel {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: EggTimerViewModel(app).also { INSTANCE = it }
-            }
-        }
-    }
+@HiltViewModel
+class EggTimerViewModel @Inject constructor(
+    private val app: Application,
+    private val alarmManager: AlarmManager,
+    @CustomTimerPrefs private val customTimerPrefs: SharedPreferences,
+    @LastEffectiveTimerSelectionPrefs private val lastEffectiveTimerSelectionPrefs: SharedPreferences,
+    private val gson: Gson,
+) : AndroidViewModel(app), TimerAction {
 
     private val REQUEST_CODE = 0
     private val isTesting = BuildConfig.IS_TESTING
@@ -42,7 +43,6 @@ class EggTimerViewModel(private val app: Application) : AndroidViewModel(app), T
     private val customTimers: MutableList<CustomTimer> = mutableListOf()
     internal val defaultEggTimerOptionsSize: Int
 
-    private val alarmManager = app.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val notifyIntent = Intent(app, AlarmReceiver::class.java)
 
     private val _timeSelection = MutableLiveData<Int>().apply { value = 0 }
@@ -129,7 +129,7 @@ class EggTimerViewModel(private val app: Application) : AndroidViewModel(app), T
             if (!it) {
                 _alarmOn.value = true
 
-                saveEffectiveTimerSelection()
+                saveEffectiveTimerSelection(timerLengthSelection)
 
                 val selectedInterval = when (timerLengthSelection) {
                     0 -> second * 10 // For testing only
@@ -239,13 +239,11 @@ class EggTimerViewModel(private val app: Application) : AndroidViewModel(app), T
      * @param context, application context.
      */
     private fun loadCustomTimers(context: Context) {
-        val sharedPreferences: SharedPreferences =
-            context.getSharedPreferences("CustomTimerPrefs", Context.MODE_PRIVATE)
-        val json = sharedPreferences.getString("customTimers", null)
+        val json = customTimerPrefs.getString("customTimers", null)
 
         if (json != null) {
             val type = object : TypeToken<List<CustomTimer>>() {}.type
-            val customTimers: List<CustomTimer> = Gson().fromJson(json, type)
+            val customTimers: List<CustomTimer> = gson.fromJson(json, type)
             this.customTimers.addAll(customTimers)
         }
     }
@@ -277,10 +275,8 @@ class EggTimerViewModel(private val app: Application) : AndroidViewModel(app), T
      * @param customTimers, list of custom timers to be added.
      */
     private fun addToSharedPreferences(customTimers: List<CustomTimer>) {
-        val sharedPreferences: SharedPreferences =
-            app.getSharedPreferences("CustomTimerPrefs", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        val json = Gson().toJson(customTimers)
+        val editor = customTimerPrefs.edit()
+        val json = gson.toJson(customTimers)
 
         editor.putString("customTimers", json)
         editor.apply()
@@ -289,11 +285,11 @@ class EggTimerViewModel(private val app: Application) : AndroidViewModel(app), T
     /**
      * Saves the last effective timer selection to SharedPreferences
      */
-    private fun saveEffectiveTimerSelection() {
-        val sharedPreferences: SharedPreferences =
-            app.getSharedPreferences("LastEffectiveTimerSelection", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        val json = Gson().toJson(_timeSelection.value)
+    private fun saveEffectiveTimerSelection(timerLengthSelection: Int? = null) {
+        val editor = lastEffectiveTimerSelectionPrefs.edit()
+        var json = gson.toJson(_timeSelection.value)
+
+        if (timerLengthSelection != null) json = gson.toJson(timerLengthSelection)
 
         editor.putString("lastEffectiveTimerSelection", json)
         editor.apply()
@@ -303,14 +299,15 @@ class EggTimerViewModel(private val app: Application) : AndroidViewModel(app), T
      * Loads the last effective timer selection from SharedPreferences
      */
     private fun loadLastEffectiveTimerSelection(context: Context) {
-        val sharedPreferences: SharedPreferences =
-            context.getSharedPreferences("LastEffectiveTimerSelection", Context.MODE_PRIVATE)
-        val json = sharedPreferences.getString("lastEffectiveTimerSelection", null)
+        val json = lastEffectiveTimerSelectionPrefs.getString("lastEffectiveTimerSelection", null)
 
         if (json != null) {
             val type = object : TypeToken<Int>() {}.type
-            val lastEffectiveTimerSelection: Int = Gson().fromJson(json, type)
+            val lastEffectiveTimerSelection: Int = gson.fromJson(json, type)
             _timeSelection.value = lastEffectiveTimerSelection
+        } else {
+            // Handle null case here, e.g., setting a default value
+            _timeSelection.value = 0
         }
     }
 }

@@ -25,21 +25,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.android.eggtimernotificationcompose.R
 import com.example.android.eggtimernotificationcompose.model.CustomTimer
 import com.example.android.eggtimernotificationcompose.theme.LocalSpacing
 import com.example.android.eggtimernotificationcompose.viewmodel.EggTimerViewModel
-import com.example.android.eggtimernotificationcompose.viewmodel.EggTimerViewModelFactory
 import com.example.android.eggtimernotificationcompose.util.setElapsedTime
 
 @Composable
 fun EggTimerScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: EggTimerViewModel = hiltViewModel()
 ) {
     val app = LocalContext.current.applicationContext as Application
-    val factory = EggTimerViewModelFactory(app)
-    val viewModel: EggTimerViewModel = viewModel(factory = factory)
 
     val spacing = LocalSpacing.current
 

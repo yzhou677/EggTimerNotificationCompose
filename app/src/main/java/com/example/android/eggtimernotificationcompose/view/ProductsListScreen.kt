@@ -28,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import com.example.android.eggtimernotificationcompose.viewmodel.ProductsViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.android.eggtimernotificationcompose.model.Product
 import coil.request.ImageRequest
@@ -50,7 +50,7 @@ import com.example.android.eggtimernotificationcompose.theme.colorPrice
 import com.example.android.eggtimernotificationcompose.util.openUrl
 
 @Composable
-fun ProductsListScreen(viewModel: ProductsViewModel = viewModel()) {
+fun ProductsListScreen(viewModel: ProductsViewModel = hiltViewModel()) {
     val products by viewModel.products.collectAsState()
     val isLoading = viewModel.isLoading.collectAsState()
     val spacing = LocalSpacing.current

@@ -4,19 +4,22 @@ import android.util.Log
 import com.example.android.eggtimernotificationcompose.model.Product
 import com.example.android.eggtimernotificationcompose.model.Recipe
 import com.example.android.eggtimernotificationcompose.util.isSpanishLocale
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig.TAG
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object FireBaseManager {
+@Singleton
+class FireBaseManager @Inject constructor(
+    private val db: FirebaseFirestore
+) {
     /**
      * Loads products list ordered by price from Firestore
      *
      * @param onResult, callback function to return a list of products
      */
     fun loadSortedProducts(onResult: (List<Product>) -> Unit, sortOrder: Boolean = true) {
-        val db = Firebase.firestore
         val query = if (sortOrder) {
             db.collection("products").orderBy("price", Query.Direction.ASCENDING)
         } else {
@@ -50,8 +53,6 @@ object FireBaseManager {
      * @param onResult, callback function to return a list of recipes
      */
     fun loadRecipes(onResult: (List<Recipe>) -> Unit) {
-        val db = Firebase.firestore
-
         val query = db.collection("recipes").orderBy("name", Query.Direction.ASCENDING)
         query.get().addOnSuccessListener { result ->
             val recipes = mutableListOf<Recipe>()

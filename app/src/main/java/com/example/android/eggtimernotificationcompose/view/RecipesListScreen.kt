@@ -26,7 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.android.eggtimernotificationcompose.model.Recipe
@@ -35,7 +35,7 @@ import com.example.android.eggtimernotificationcompose.viewmodel.RecipesViewMode
 import com.example.android.eggtimernotificationcompose.util.openUrl
 
 @Composable
-fun RecipesListScreen(viewModel: RecipesViewModel = viewModel()) {
+fun RecipesListScreen(viewModel: RecipesViewModel = hiltViewModel()) {
     val recipes by viewModel.recipes.collectAsState()
     val isLoading = viewModel.isLoading.collectAsState()
     val spacing = LocalSpacing.current

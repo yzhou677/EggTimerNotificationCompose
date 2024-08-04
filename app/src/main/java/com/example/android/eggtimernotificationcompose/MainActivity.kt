@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,25 +49,31 @@ import com.example.android.eggtimernotificationcompose.view.RecipesListScreen
 import com.example.android.eggtimernotificationcompose.theme.EggTimerNotificationComposeTheme
 import com.example.android.eggtimernotificationcompose.theme.LocalSpacing
 import com.example.android.eggtimernotificationcompose.viewmodel.EggTimerViewModel
-import com.example.android.eggtimernotificationcompose.viewmodel.EggTimerViewModelFactory
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private lateinit var timerAction: EggTimerViewModel
+    private val timerAction: EggTimerViewModel by viewModels()
+
+    @Inject
+    lateinit var notificationChannelManager: NotificationChannelManager
+    @Inject
+    lateinit var googleAssistantManager: GoogleAssistantManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        NotificationChannelManager.createNotificationChannel(
-            this,
+        notificationChannelManager.createNotificationChannel(
             getString(R.string.egg_notification_channel_id),
             getString(R.string.egg_notification_channel_name)
         )
         enableEdgeToEdge()
         setContent {
             EggTimerNotificationComposeTheme {
-                MainContent()
+                MainContent(timerAction)
             }
         }
         handleIntent(intent)
@@ -85,21 +91,16 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent) {
         intent.action?.let { action ->
-            val factory = EggTimerViewModelFactory(application)
-            timerAction = ViewModelProvider(this, factory)[EggTimerViewModel::class.java]
-
             if (action == Intent.ACTION_VIEW) {
                 val softnessLevel = intent.getStringExtra("softness_level")
                     ?: intent.data?.getQueryParameter("softness_level")
                 if (softnessLevel != null) {
-                    GoogleAssistantManager.startTimerThroughGoogleAssistant(
+                    googleAssistantManager.startTimerThroughGoogleAssistant(
                         softnessLevel,
-                        resources,
                         timerAction,
-                        this
                     )
                 } else {
-                    GoogleAssistantManager.showInvalidSoftnessLevelError(resources, this)
+                    googleAssistantManager.showInvalidSoftnessLevelError()
                 }
             }
         }
@@ -107,7 +108,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainContent() {
+fun MainContent(timerAction: EggTimerViewModel) {
     val navController = rememberNavController()
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -139,7 +140,8 @@ fun MainContent() {
                         EggTimerScreen(
                             modifier = Modifier.padding(
                                 innerPadding
-                            )
+                            ),
+                            timerAction
                         )
                     }
                     composable("productlist") { ProductsListScreen() }

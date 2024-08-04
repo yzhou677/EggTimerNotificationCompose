@@ -3,22 +3,25 @@ package com.example.android.eggtimernotificationcompose.manager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.media.RingtoneManager
 import android.net.Uri
 import com.example.android.eggtimernotificationcompose.R
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object NotificationChannelManager {
+@Singleton
+class NotificationChannelManager @Inject constructor(
+    private val context: Context,
+    private val ringtoneUri: Uri,
+    private val notificationManager: NotificationManager
+){
     /**
      * Creates and registers Notification channel, which is required
      *
-     * @param context, activity context.
      * @param channelId, Notification channel id.
      * @param channelName, Notification channel name.
      */
-    fun createNotificationChannel(context: Context, channelId: String, channelName: String) {
+    fun createNotificationChannel(channelId: String, channelName: String) {
         // create the NotificationChannel
-        val ringtoneUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-
         val notificationChannel = NotificationChannel(
             channelId,
             channelName,
@@ -35,7 +38,6 @@ object NotificationChannelManager {
         }
 
         // register the channel with the system
-        val notificationManager = context.getSystemService(NotificationManager::class.java)
-        notificationManager?.createNotificationChannel(notificationChannel)
+        notificationManager.createNotificationChannel(notificationChannel)
     }
 }

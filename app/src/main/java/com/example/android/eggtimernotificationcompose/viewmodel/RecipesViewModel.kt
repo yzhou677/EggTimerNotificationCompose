@@ -3,10 +3,15 @@ package com.example.android.eggtimernotificationcompose.viewmodel
 import androidx.lifecycle.ViewModel
 import com.example.android.eggtimernotificationcompose.manager.FireBaseManager
 import com.example.android.eggtimernotificationcompose.model.Recipe
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import javax.inject.Inject
 
-class RecipesViewModel : ViewModel() {
+@HiltViewModel
+class RecipesViewModel @Inject constructor(
+    private val fireBaseManager: FireBaseManager
+): ViewModel() {
     private val _recipes = MutableStateFlow<List<Recipe>>(emptyList())
     val recipes: StateFlow<List<Recipe>> = _recipes
 
@@ -23,7 +28,7 @@ class RecipesViewModel : ViewModel() {
     private fun loadRecipes() {
         _isLoading.value = true
 
-        FireBaseManager.loadRecipes { recipesList ->
+        fireBaseManager.loadRecipes { recipesList ->
             _recipes.value = recipesList
             _isLoading.value = false
         }
