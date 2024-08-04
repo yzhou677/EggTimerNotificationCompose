@@ -5,11 +5,16 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class DismissReceiver: BroadcastReceiver() {
+    @Inject
+    lateinit var notificationManager: NotificationManager
+
     override fun onReceive(context: Context, intent: Intent) {
         // Dismiss the notification
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationId = intent.getIntExtra("notification_id", -1)
         notificationManager.cancel(notificationId)
     }

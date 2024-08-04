@@ -27,7 +27,7 @@ gson = "2.8.9"
 cardview = "1.0.0"
 coreKtxVersion = "1.6.1"
 core = "1.44.0"
-hilt = "2.48"
+hilt = "2.51.1"
 hilt_navigation_compose = "1.0.0"
 
 [libraries]
