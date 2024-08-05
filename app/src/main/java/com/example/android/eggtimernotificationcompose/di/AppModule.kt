@@ -1,8 +1,8 @@
 package com.example.android.eggtimernotificationcompose.di
 
 import android.app.AlarmManager
-import android.app.Application
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -13,6 +13,10 @@ import com.example.android.eggtimernotificationcompose.manager.FireBaseManager
 import com.example.android.eggtimernotificationcompose.manager.GoogleAssistantManager
 import com.example.android.eggtimernotificationcompose.manager.NotificationChannelManager
 import com.example.android.eggtimernotificationcompose.receiver.AlarmReceiver
+import com.example.android.eggtimernotificationcompose.util.Clock
+import com.example.android.eggtimernotificationcompose.util.DefaultTimer
+import com.example.android.eggtimernotificationcompose.util.SystemClockImpl
+import com.example.android.eggtimernotificationcompose.util.Timer
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
 import dagger.Module
@@ -99,5 +103,37 @@ class AppModule {
     @Singleton
     fun provideGson(): Gson{
         return Gson()
+    }
+
+    @Provides
+    fun providePendingIntent(@ApplicationContext context: Context): PendingIntent {
+        val notifyIntent = Intent(context, AlarmReceiver::class.java)
+        return PendingIntent.getBroadcast(
+            context,
+            0,
+            notifyIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideClock(): Clock {
+        return SystemClockImpl()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTimerFactory(): Timer.Factory {
+        return object : Timer.Factory {
+            override fun create(
+                millisInFuture: Long,
+                countDownInterval: Long,
+                onTick: (Long) -> Unit,
+                onFinish: () -> Unit
+            ): Timer {
+                return DefaultTimer(millisInFuture, countDownInterval, onTick, onFinish)
+            }
+        }
     }
 }

@@ -2,12 +2,8 @@ package com.example.android.eggtimernotificationcompose.viewmodel
 
 import android.app.*
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
-import android.os.CountDownTimer
-import android.os.SystemClock
 import androidx.core.app.AlarmManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.*
 import com.example.android.eggtimernotificationcompose.BuildConfig
 import com.example.android.eggtimernotificationcompose.R
@@ -15,35 +11,35 @@ import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
 import com.example.android.eggtimernotificationcompose.di.LastEffectiveTimerSelectionPrefs
 import com.example.android.eggtimernotificationcompose.manager.TimerAction
 import com.example.android.eggtimernotificationcompose.model.CustomTimer
-import com.example.android.eggtimernotificationcompose.receiver.AlarmReceiver
+import com.example.android.eggtimernotificationcompose.util.Clock
+import com.example.android.eggtimernotificationcompose.util.Timer
 import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.*
 import javax.inject.Inject
 
 @HiltViewModel
 class EggTimerViewModel @Inject constructor(
-    private val app: Application,
+    app: Application,
     private val alarmManager: AlarmManager,
     @CustomTimerPrefs private val customTimerPrefs: SharedPreferences,
     @LastEffectiveTimerSelectionPrefs private val lastEffectiveTimerSelectionPrefs: SharedPreferences,
     private val gson: Gson,
+    private val notificationManager: NotificationManager,
+    private val notifyPendingIntent: PendingIntent,
+    private val clock: Clock,
+    private val timerFactory: Timer.Factory
 ) : AndroidViewModel(app), TimerAction {
 
-    private val REQUEST_CODE = 0
     private val isTesting = BuildConfig.IS_TESTING
 
     private val minute: Long = 60_000L
     private val second: Long = 1_000L
 
     private var timerLengthOptions: MutableList<Int>
-    private val notifyPendingIntent: PendingIntent
     private val customTimers: MutableList<CustomTimer> = mutableListOf()
     internal val defaultEggTimerOptionsSize: Int
-
-    private val notifyIntent = Intent(app, AlarmReceiver::class.java)
 
     private val _timeSelection = MutableLiveData<Int>().apply { value = 0 }
     val timeSelection: LiveData<Int>
@@ -61,17 +57,10 @@ class EggTimerViewModel @Inject constructor(
     val eggTimerItems: LiveData<List<String>>
         get() = _eggTimerItems
 
-    private lateinit var timer: CountDownTimer
+    private lateinit var timer: Timer
 
     init {
         _alarmOn.value = false
-
-        notifyPendingIntent = PendingIntent.getBroadcast(
-            getApplication(),
-            REQUEST_CODE,
-            notifyIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
 
         loadLastEffectiveTimerSelection(app)
         loadCustomTimers(app)
@@ -135,14 +124,7 @@ class EggTimerViewModel @Inject constructor(
                     0 -> second * 10 // For testing only
                     else -> timerLengthOptions[timerLengthSelection] * minute
                 }
-                val triggerTime = SystemClock.elapsedRealtime() + selectedInterval
-
-                // get an instance of NotificationManager and call sendNotification
-                val notificationManager =
-                    ContextCompat.getSystemService(
-                        app,
-                        NotificationManager::class.java
-                    ) as NotificationManager
+                val triggerTime = clock.elapsedRealtime() + selectedInterval
 
                 // call cancel notification
                 notificationManager.cancelNotifications()
@@ -182,22 +164,20 @@ class EggTimerViewModel @Inject constructor(
      * @param triggerTime, future trigger time in milliseconds.
      */
     private fun createTimer(triggerTime: Long) {
-        viewModelScope.launch {
-            timer = object : CountDownTimer(triggerTime, second) {
-                override fun onTick(millisUntilFinished: Long) {
-                    _elapsedTime.value = triggerTime - SystemClock.elapsedRealtime()
-                    if (_elapsedTime.value!! <= 0) {
-                        resetTimer()
-                    }
-                }
-
-                override fun onFinish() {
+        timer = timerFactory.create(triggerTime - clock.elapsedRealtime(), 1000L,
+            {
+                _elapsedTime.value = triggerTime - clock.elapsedRealtime()
+                if (_elapsedTime.value!! <= 0) {
                     resetTimer()
                 }
+            },
+            {
+                resetTimer()
             }
-            timer.start()
-        }
+        )
+        timer.start()
     }
+
 
     /**
      * Cancels the alarm, notification and resets the timer
@@ -211,7 +191,9 @@ class EggTimerViewModel @Inject constructor(
      * Resets the timer on screen and sets alarm value false
      */
     private fun resetTimer() {
-        timer.cancel()
+        if (::timer.isInitialized) {
+            timer.cancel()
+        }
         _elapsedTime.value = 0
         _alarmOn.value = false
     }
