@@ -5,14 +5,13 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.app.AlarmManagerCompat
 import androidx.lifecycle.*
-import com.example.android.eggtimernotificationcompose.BuildConfig
 import com.example.android.eggtimernotificationcompose.R
 import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
 import com.example.android.eggtimernotificationcompose.di.LastEffectiveTimerSelectionPrefs
 import com.example.android.eggtimernotificationcompose.manager.TimerAction
 import com.example.android.eggtimernotificationcompose.model.CustomTimer
-import com.example.android.eggtimernotificationcompose.util.Clock
-import com.example.android.eggtimernotificationcompose.util.Timer
+import com.example.android.eggtimernotificationcompose.di.Clock
+import com.example.android.eggtimernotificationcompose.di.Timer
 import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
@@ -29,11 +28,9 @@ class EggTimerViewModel @Inject constructor(
     private val notificationManager: NotificationManager,
     private val notifyPendingIntent: PendingIntent,
     private val clock: Clock,
-    private val timerFactory: Timer.Factory
+    private val timerFactory: Timer.Factory,
+    isTesting: Boolean
 ) : AndroidViewModel(app), TimerAction {
-
-    private val isTesting = BuildConfig.IS_TESTING
-
     private val minute: Long = 60_000L
     private val second: Long = 1_000L
 

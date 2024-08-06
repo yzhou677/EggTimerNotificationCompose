@@ -1,10 +1,9 @@
 package com.example.android.eggtimernotificationcompose.manager
 
-import android.content.Context
 import android.content.res.Resources
 import android.widget.Toast
-import com.example.android.eggtimernotificationcompose.BuildConfig
 import com.example.android.eggtimernotificationcompose.R
+import com.example.android.eggtimernotificationcompose.di.ToastProvider
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,14 +16,15 @@ interface TimerAction {
 @Singleton
 class GoogleAssistantManager @Inject constructor(
     private val resources: Resources,
-    private val context: Context
+    private val toastProvider: ToastProvider,
+    private val isTesting: Boolean
 ) {
     fun startTimerThroughGoogleAssistant(
         softnessLevel: String,
         timerAction: TimerAction,
     ) {
         var timeSelection = resources.getStringArray(R.array.egg_array).indexOf(softnessLevel)
-        if (BuildConfig.IS_TESTING) timeSelection++
+        if (timeSelection != -1 && isTesting) timeSelection++
 
         if (timeSelection != -1) {
             timerAction.startTimer(timeSelection)
@@ -38,7 +38,7 @@ class GoogleAssistantManager @Inject constructor(
         val supportedSoftnessLevels = resources.getStringArray(R.array.egg_array).joinToString(", ")
         val message = "Invalid softness level. Please choose from: $supportedSoftnessLevels"
 
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        toastProvider.showToast(message, Toast.LENGTH_LONG)
     }
 }
 

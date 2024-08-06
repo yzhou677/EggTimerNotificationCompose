@@ -1,4 +1,4 @@
-package com.example.android.eggtimernotificationcompose.util
+package com.example.android.eggtimernotificationcompose.di
 
 interface Clock {
     fun elapsedRealtime(): Long

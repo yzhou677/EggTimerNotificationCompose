@@ -1,4 +1,4 @@
-package com.example.android.eggtimernotificationcompose.util
+package com.example.android.eggtimernotificationcompose.di
 
 import android.os.CountDownTimer
 

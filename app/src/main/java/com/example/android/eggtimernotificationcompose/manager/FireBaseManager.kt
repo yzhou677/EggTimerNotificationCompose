@@ -1,6 +1,6 @@
 package com.example.android.eggtimernotificationcompose.manager
 
-import android.util.Log
+import com.example.android.eggtimernotificationcompose.di.Logger
 import com.example.android.eggtimernotificationcompose.model.Product
 import com.example.android.eggtimernotificationcompose.model.Recipe
 import com.example.android.eggtimernotificationcompose.util.isSpanishLocale
@@ -10,16 +10,22 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfig.TAG
 import javax.inject.Inject
 import javax.inject.Singleton
 
+interface FireBaseManagerInterface {
+    fun loadSortedProducts(onResult: (List<Product>) -> Unit, sortOrder: Boolean = true)
+    fun loadRecipes(onResult: (List<Recipe>) -> Unit)
+}
+
 @Singleton
 class FireBaseManager @Inject constructor(
-    private val db: FirebaseFirestore
-) {
+    private val db: FirebaseFirestore,
+    private val logger: Logger
+): FireBaseManagerInterface {
     /**
      * Loads products list ordered by price from Firestore
      *
      * @param onResult, callback function to return a list of products
      */
-    fun loadSortedProducts(onResult: (List<Product>) -> Unit, sortOrder: Boolean = true) {
+    override fun loadSortedProducts(onResult: (List<Product>) -> Unit, sortOrder: Boolean) {
         val query = if (sortOrder) {
             db.collection("products").orderBy("price", Query.Direction.ASCENDING)
         } else {
@@ -28,8 +34,7 @@ class FireBaseManager @Inject constructor(
 
         query.get().addOnSuccessListener { result ->
             val products = mutableListOf<Product>()
-            for (document in result) {
-                // Choose the field name based on the device's locale: use "translations.es" for Spanish locales or "name" for default english locale
+            for (document in result.documents) {
                 val nameField = if (isSpanishLocale()) "translations.es" else "name"
 
                 val product = Product(
@@ -43,7 +48,7 @@ class FireBaseManager @Inject constructor(
             }
             onResult(products)
         }.addOnFailureListener { exception ->
-            Log.w(TAG, "Error getting products documents.", exception)
+            logger.w(TAG, "Error getting products documents.", exception)
         }
     }
 
@@ -52,11 +57,11 @@ class FireBaseManager @Inject constructor(
      *
      * @param onResult, callback function to return a list of recipes
      */
-    fun loadRecipes(onResult: (List<Recipe>) -> Unit) {
+    override fun loadRecipes(onResult: (List<Recipe>) -> Unit) {
         val query = db.collection("recipes").orderBy("name", Query.Direction.ASCENDING)
         query.get().addOnSuccessListener { result ->
             val recipes = mutableListOf<Recipe>()
-            for (document in result) {
+            for (document in result.documents) {
                 // Choose the field name based on the device's locale: use "translations.es" for Spanish locales or "name" for default english locale
                 val nameField = if (isSpanishLocale()) "translations.es" else "name"
 
@@ -71,7 +76,7 @@ class FireBaseManager @Inject constructor(
             }
             onResult(recipes)
         }.addOnFailureListener { exception ->
-            Log.w(TAG, "Error getting recipes documents.", exception)
+            logger.w(TAG, "Error getting recipes documents.", exception)
         }
     }
 }

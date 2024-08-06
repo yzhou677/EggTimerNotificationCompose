@@ -9,14 +9,12 @@ import android.content.SharedPreferences
 import android.content.res.Resources
 import android.media.RingtoneManager
 import android.net.Uri
+import com.example.android.eggtimernotificationcompose.BuildConfig
 import com.example.android.eggtimernotificationcompose.manager.FireBaseManager
+import com.example.android.eggtimernotificationcompose.manager.FireBaseManagerInterface
 import com.example.android.eggtimernotificationcompose.manager.GoogleAssistantManager
 import com.example.android.eggtimernotificationcompose.manager.NotificationChannelManager
 import com.example.android.eggtimernotificationcompose.receiver.AlarmReceiver
-import com.example.android.eggtimernotificationcompose.util.Clock
-import com.example.android.eggtimernotificationcompose.util.DefaultTimer
-import com.example.android.eggtimernotificationcompose.util.SystemClockImpl
-import com.example.android.eggtimernotificationcompose.util.Timer
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
 import dagger.Module
@@ -66,8 +64,8 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideFireBaseManager(db: FirebaseFirestore): FireBaseManager {
-        return FireBaseManager(db)
+    fun provideFireBaseManager(db: FirebaseFirestore, logger: Logger): FireBaseManagerInterface {
+        return FireBaseManager(db, logger)
     }
 
     @Provides
@@ -80,9 +78,10 @@ class AppModule {
     @Singleton
     fun provideGoogleAssistantManager(
         resources: Resources,
-        @ApplicationContext context: Context
+        toastProvider: ToastProvider,
+        isTesting: Boolean
     ): GoogleAssistantManager {
-        return GoogleAssistantManager(resources, context)
+        return GoogleAssistantManager(resources, toastProvider, isTesting)
     }
 
     @Provides
@@ -135,5 +134,23 @@ class AppModule {
                 return DefaultTimer(millisInFuture, countDownInterval, onTick, onFinish)
             }
         }
+    }
+
+    @Provides
+    @Singleton
+    fun provideLogger(): Logger {
+        return RealLogger() // Or provide a mock for testing
+    }
+
+    @Provides
+    @Singleton
+    fun provideToastProvider(@ApplicationContext context: Context): ToastProvider {
+        return AndroidToastProvider(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideIsTesting(): Boolean {
+        return BuildConfig.IS_TESTING
     }
 }

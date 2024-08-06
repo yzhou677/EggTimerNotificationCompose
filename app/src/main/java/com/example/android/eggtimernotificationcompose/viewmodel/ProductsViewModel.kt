@@ -1,7 +1,7 @@
 package com.example.android.eggtimernotificationcompose.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.android.eggtimernotificationcompose.manager.FireBaseManager
+import com.example.android.eggtimernotificationcompose.manager.FireBaseManagerInterface
 import com.example.android.eggtimernotificationcompose.model.Product
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,7 +10,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProductsViewModel @Inject constructor(
-    private val fireBaseManager: FireBaseManager
+    private val fireBaseManager: FireBaseManagerInterface
 ) : ViewModel() {
     private val _products = MutableStateFlow<List<Product>>(emptyList())
     val products: StateFlow<List<Product>> = _products

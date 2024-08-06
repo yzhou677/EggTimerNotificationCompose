@@ -11,8 +11,8 @@ import androidx.lifecycle.Observer
 import com.example.android.eggtimernotificationcompose.R
 import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
 import com.example.android.eggtimernotificationcompose.di.LastEffectiveTimerSelectionPrefs
-import com.example.android.eggtimernotificationcompose.util.Clock
-import com.example.android.eggtimernotificationcompose.util.Timer
+import com.example.android.eggtimernotificationcompose.di.Clock
+import com.example.android.eggtimernotificationcompose.di.Timer
 import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -59,9 +59,6 @@ class EggTimerViewModelTest {
 
     @Mock
     private lateinit var lastEffectiveTimerSelectionEditor: SharedPreferences.Editor
-
-    @Mock
-    private lateinit var customTimerEditor: SharedPreferences.Editor
 
     private lateinit var gson: Gson
 
@@ -118,7 +115,8 @@ class EggTimerViewModelTest {
             notificationManager,
             notifyPendingIntent,
             clock,
-            timerFactory
+            timerFactory,
+            true
         )
     }
 
