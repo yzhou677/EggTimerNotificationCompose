@@ -28,9 +28,9 @@ class AlarmReceiver : BroadcastReceiver() {
         // Show notification
         notificationManager.sendNotification(
             "Timer $timerId finished",
-            context
+            context,
+            timerId
         )
-
         // Update timer state to FIRED
         CoroutineScope(Dispatchers.IO).launch {
             val timers = repository.getAll()

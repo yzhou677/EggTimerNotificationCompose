@@ -1,43 +1,54 @@
 package com.example.android.eggtimernotificationcompose.receiver
 
-import android.app.AlarmManager
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.SystemClock
-import androidx.core.app.AlarmManagerCompat
+import com.example.android.eggtimernotificationcompose.data.TimerRepository
+import com.example.android.eggtimernotificationcompose.engine.TimerEngine
+import com.example.android.eggtimernotificationcompose.model.TimerStatus
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class SnoozeReceiver: BroadcastReceiver() {
-    private val REQUEST_CODE = 0
+class SnoozeReceiver : BroadcastReceiver() {
 
     @Inject
-    lateinit var alarmManager: AlarmManager
+    lateinit var timerEngine: TimerEngine
+
+    @Inject
+    lateinit var repository: TimerRepository
 
     @Inject
     lateinit var notificationManager: NotificationManager
 
     override fun onReceive(context: Context, intent: Intent) {
-        val triggerTime = SystemClock.elapsedRealtime() +  1 * 60 * 1000 // 1 minute in milliseconds
+        val timerId = intent.getStringExtra("TIMER_ID") ?: return
 
-        val notifyIntent = Intent(context, AlarmReceiver::class.java)
-        val notifyPendingIntent = PendingIntent.getBroadcast(
-            context,
-            REQUEST_CODE,
-            notifyIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        AlarmManagerCompat.setExactAndAllowWhileIdle(
-            alarmManager,
-            AlarmManager.ELAPSED_REALTIME_WAKEUP,
-            triggerTime,
-            notifyPendingIntent
-        )
+        val newTriggerAt = System.currentTimeMillis() + 60_000
 
+        // Reschedule via TimerEngine
+        timerEngine.schedule(timerId, newTriggerAt)
+
+        // Update DB
+        CoroutineScope(Dispatchers.IO).launch {
+            val timers = repository.getAll()
+            val timer = timers.find { it.id == timerId }
+
+            timer?.let {
+                repository.update(
+                    it.copy(
+                        triggerAtMillis = newTriggerAt,
+                        status = TimerStatus.SCHEDULED
+                    )
+                )
+            }
+        }
+
+        // Clear current notification
         notificationManager.cancelAll()
     }
 }
