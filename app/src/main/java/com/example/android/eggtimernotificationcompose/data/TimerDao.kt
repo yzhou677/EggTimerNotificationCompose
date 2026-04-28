@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.Flow
 interface TimerDao {
 
     @Query("SELECT * FROM timers")
+    suspend fun getAll(): List<TimerEntity>
+
+    @Query("SELECT * FROM timers")
     fun observeTimers(): Flow<List<TimerEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
