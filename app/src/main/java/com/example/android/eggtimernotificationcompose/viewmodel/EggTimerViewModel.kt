@@ -31,7 +31,6 @@ class EggTimerViewModel @Inject constructor(
     @LastEffectiveTimerSelectionPrefs private val lastEffectiveTimerSelectionPrefs: SharedPreferences,
     private val gson: Gson,
     private val notificationManager: NotificationManager,
-    private val notifyPendingIntent: PendingIntent,
     private val clock: Clock,
     private val timerFactory: Timer.Factory,
     private val timerEngine: TimerEngine,
