@@ -3,7 +3,6 @@ package com.example.android.eggtimernotificationcompose.viewmodel
 import android.app.*
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.core.app.AlarmManagerCompat
 import androidx.lifecycle.*
 import com.example.android.eggtimernotificationcompose.R
 import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
@@ -12,10 +11,12 @@ import com.example.android.eggtimernotificationcompose.manager.TimerAction
 import com.example.android.eggtimernotificationcompose.model.CustomTimer
 import com.example.android.eggtimernotificationcompose.di.Clock
 import com.example.android.eggtimernotificationcompose.di.Timer
+import com.example.android.eggtimernotificationcompose.engine.TimerEngine
 import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -29,6 +30,7 @@ class EggTimerViewModel @Inject constructor(
     private val notifyPendingIntent: PendingIntent,
     private val clock: Clock,
     private val timerFactory: Timer.Factory,
+    private val timerEngine: TimerEngine,
     isTesting: Boolean
 ) : AndroidViewModel(app), TimerAction {
     private val minute: Long = 60_000L
@@ -55,6 +57,8 @@ class EggTimerViewModel @Inject constructor(
         get() = _eggTimerItems
 
     private lateinit var timer: Timer
+
+    private var currentTimerId: String? = null
 
     init {
         _alarmOn.value = false
@@ -121,19 +125,16 @@ class EggTimerViewModel @Inject constructor(
                     0 -> second * 10 // For testing only
                     else -> timerLengthOptions[timerLengthSelection] * minute
                 }
-                val triggerTime = clock.elapsedRealtime() + selectedInterval
+                val triggerAtMillis = System.currentTimeMillis() + selectedInterval
+                val timerId = UUID.randomUUID().toString()
+                currentTimerId = timerId
 
                 // call cancel notification
                 notificationManager.cancelNotifications()
 
-                AlarmManagerCompat.setExactAndAllowWhileIdle(
-                    alarmManager,
-                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    triggerTime,
-                    notifyPendingIntent
-                )
+                timerEngine.schedule(timerId, triggerAtMillis)
 
-                createTimer(triggerTime)
+                createTimer(triggerAtMillis)
             }
         }
     }
@@ -181,7 +182,10 @@ class EggTimerViewModel @Inject constructor(
      */
     private fun cancelNotification() {
         resetTimer()
-        alarmManager.cancel(notifyPendingIntent)
+
+        currentTimerId?.let {
+            timerEngine.cancel(it)
+        }
     }
 
     /**
