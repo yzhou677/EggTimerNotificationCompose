@@ -10,6 +10,11 @@ import android.content.res.Resources
 import android.media.RingtoneManager
 import android.net.Uri
 import com.example.android.eggtimernotificationcompose.BuildConfig
+import androidx.room.Room
+import com.example.android.eggtimernotificationcompose.data.AppDatabase
+import com.example.android.eggtimernotificationcompose.data.TimerDao
+import com.example.android.eggtimernotificationcompose.data.TimerRepository
+import com.example.android.eggtimernotificationcompose.engine.TimerEngine
 import com.example.android.eggtimernotificationcompose.manager.FireBaseManager
 import com.example.android.eggtimernotificationcompose.manager.FireBaseManagerInterface
 import com.example.android.eggtimernotificationcompose.manager.GoogleAssistantManager
@@ -146,6 +151,37 @@ class AppModule {
     @Singleton
     fun provideToastProvider(@ApplicationContext context: Context): ToastProvider {
         return AndroidToastProvider(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "timer-db"
+        ).build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTimerDao(database: AppDatabase): TimerDao {
+        return database.timerDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTimerRepository(timerDao: TimerDao): TimerRepository {
+        return TimerRepository(timerDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTimerEngine(
+        @ApplicationContext context: Context,
+        alarmManager: AlarmManager
+    ): TimerEngine {
+        return TimerEngine(context, alarmManager)
     }
 
     @Provides

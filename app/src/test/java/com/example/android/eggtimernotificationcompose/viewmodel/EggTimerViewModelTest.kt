@@ -3,16 +3,17 @@ package com.example.android.eggtimernotificationcompose.viewmodel
 import android.app.AlarmManager
 import android.app.Application
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.SharedPreferences
 import android.content.res.Resources
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
 import com.example.android.eggtimernotificationcompose.R
+import com.example.android.eggtimernotificationcompose.data.TimerRepository
 import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
 import com.example.android.eggtimernotificationcompose.di.LastEffectiveTimerSelectionPrefs
 import com.example.android.eggtimernotificationcompose.di.Clock
 import com.example.android.eggtimernotificationcompose.di.Timer
+import com.example.android.eggtimernotificationcompose.engine.TimerEngine
 import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -66,9 +67,6 @@ class EggTimerViewModelTest {
     private lateinit var notificationManager: NotificationManager
 
     @Mock
-    private lateinit var notifyPendingIntent: PendingIntent
-
-    @Mock
     private lateinit var timer: Timer
 
     @Mock
@@ -76,6 +74,12 @@ class EggTimerViewModelTest {
 
     @Mock
     private lateinit var timerFactory: Timer.Factory
+
+    @Mock
+    private lateinit var timerEngine: TimerEngine
+
+    @Mock
+    private lateinit var repository: TimerRepository
 
     private lateinit var viewModel: EggTimerViewModel
 
@@ -113,9 +117,10 @@ class EggTimerViewModelTest {
             lastEffectiveTimerSelectionPrefs,
             gson,
             notificationManager,
-            notifyPendingIntent,
             clock,
             timerFactory,
+            timerEngine,
+            repository,
             true
         )
     }
@@ -162,11 +167,7 @@ class EggTimerViewModelTest {
         viewModel.setTimeSelected(1)
         viewModel.startTimer(1)
 
-        verify(alarmManager).setExact(
-            eq(AlarmManager.ELAPSED_REALTIME_WAKEUP),
-            anyLong(),
-            eq(notifyPendingIntent)
-        )
+        verify(timerEngine).schedule(anyString(), anyLong())
         verify(notificationManager).cancelNotifications()
     }
 
@@ -176,7 +177,7 @@ class EggTimerViewModelTest {
         viewModel.startTimer(1)
         viewModel.cancelTimer()
 
-        verify(alarmManager).cancel(eq(notifyPendingIntent))
+        verify(timerEngine).cancel(anyString())
         verify(notificationManager).cancelNotifications()
     }
 }

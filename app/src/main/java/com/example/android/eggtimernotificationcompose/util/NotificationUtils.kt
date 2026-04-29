@@ -13,14 +13,12 @@ import com.example.android.eggtimernotificationcompose.receiver.SnoozeReceiver
 import com.example.android.eggtimernotificationcompose.receiver.getDismissIntent
 
 private val NOTIFICATION_ID = 0
-private val REQUEST_CODE = 0
 
-/**
- * Builds and delivers the notification.
- *
- * @param messageBody, activity context.
- */
-fun NotificationManager.sendNotification(messageBody: String, applicationContext: Context) {
+fun NotificationManager.sendNotification(
+    messageBody: String,
+    applicationContext: Context,
+    timerId: String
+) {
     val contentIntent = Intent(applicationContext, MainActivity::class.java)
     val dismissIntent = getDismissIntent(applicationContext, NOTIFICATION_ID)
 
@@ -37,12 +35,16 @@ fun NotificationManager.sendNotification(messageBody: String, applicationContext
     )
     val bigPicStyle = NotificationCompat.BigPictureStyle().bigPicture(eggImage)
 
-    val snoozeIntent = Intent(applicationContext, SnoozeReceiver::class.java)
+    // ⭐ Snooze 带 timerId
+    val snoozeIntent = Intent(applicationContext, SnoozeReceiver::class.java).apply {
+        putExtra("TIMER_ID", timerId)
+    }
+
     val snoozePendingIntent: PendingIntent = PendingIntent.getBroadcast(
         applicationContext,
-        REQUEST_CODE,
+        timerId.hashCode(),
         snoozeIntent,
-        PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
     val builder = NotificationCompat.Builder(
@@ -62,8 +64,8 @@ fun NotificationManager.sendNotification(messageBody: String, applicationContext
             snoozePendingIntent
         )
         .addAction(
-            android.R.drawable.ic_delete, // 替换为你的 dismiss 图标
-            applicationContext.getString(R.string.dismiss), // 替换为你的 dismiss 文本
+            android.R.drawable.ic_delete,
+            applicationContext.getString(R.string.dismiss),
             dismissIntent
         )
         .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -76,7 +78,4 @@ fun NotificationManager.sendNotification(messageBody: String, applicationContext
 /**
  * Cancels all notifications.
  */
-fun NotificationManager.cancelNotifications() {
-    cancelAll()
-}
-
+fun NotificationManager.cancelNotifications() { cancelAll() }

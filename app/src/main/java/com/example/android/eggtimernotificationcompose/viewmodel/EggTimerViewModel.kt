@@ -3,19 +3,24 @@ package com.example.android.eggtimernotificationcompose.viewmodel
 import android.app.*
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.core.app.AlarmManagerCompat
 import androidx.lifecycle.*
 import com.example.android.eggtimernotificationcompose.R
+import com.example.android.eggtimernotificationcompose.data.TimerRepository
 import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
 import com.example.android.eggtimernotificationcompose.di.LastEffectiveTimerSelectionPrefs
 import com.example.android.eggtimernotificationcompose.manager.TimerAction
 import com.example.android.eggtimernotificationcompose.model.CustomTimer
 import com.example.android.eggtimernotificationcompose.di.Clock
 import com.example.android.eggtimernotificationcompose.di.Timer
+import com.example.android.eggtimernotificationcompose.engine.TimerEngine
+import com.example.android.eggtimernotificationcompose.model.TimerEntity
+import com.example.android.eggtimernotificationcompose.model.TimerStatus
 import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,9 +31,10 @@ class EggTimerViewModel @Inject constructor(
     @LastEffectiveTimerSelectionPrefs private val lastEffectiveTimerSelectionPrefs: SharedPreferences,
     private val gson: Gson,
     private val notificationManager: NotificationManager,
-    private val notifyPendingIntent: PendingIntent,
     private val clock: Clock,
     private val timerFactory: Timer.Factory,
+    private val timerEngine: TimerEngine,
+    private val repository: TimerRepository,
     isTesting: Boolean
 ) : AndroidViewModel(app), TimerAction {
     private val minute: Long = 60_000L
@@ -56,8 +62,12 @@ class EggTimerViewModel @Inject constructor(
 
     private lateinit var timer: Timer
 
+    private var currentTimerId: String? = null
+
     init {
         _alarmOn.value = false
+
+        restoreTimers()
 
         loadLastEffectiveTimerSelection(app)
         loadCustomTimers(app)
@@ -121,19 +131,26 @@ class EggTimerViewModel @Inject constructor(
                     0 -> second * 10 // For testing only
                     else -> timerLengthOptions[timerLengthSelection] * minute
                 }
-                val triggerTime = clock.elapsedRealtime() + selectedInterval
+                val triggerAtMillis = System.currentTimeMillis() + selectedInterval
+                val timerId = UUID.randomUUID().toString()
+                currentTimerId = timerId
+
+                val timer = TimerEntity(
+                    id = timerId,
+                    triggerAtMillis = triggerAtMillis,
+                    status = TimerStatus.SCHEDULED
+                )
 
                 // call cancel notification
                 notificationManager.cancelNotifications()
 
-                AlarmManagerCompat.setExactAndAllowWhileIdle(
-                    alarmManager,
-                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    triggerTime,
-                    notifyPendingIntent
-                )
+                viewModelScope.launch {
+                    repository.save(timer)
+                }
 
-                createTimer(triggerTime)
+                timerEngine.schedule(timerId, triggerAtMillis)
+
+                createTimer(triggerAtMillis)
             }
         }
     }
@@ -156,14 +173,43 @@ class EggTimerViewModel @Inject constructor(
     }
 
     /**
+     * Restores persisted timers from the database and reconciles them with the current system time.
+     *
+     * For each stored timer:
+     * - If the timer is not in SCHEDULED state, it is ignored.
+     * - If the timer has already expired, it is marked as FIRED in the database.
+     * - If the timer is still valid, it is rescheduled using TimerEngine.
+     */
+    fun restoreTimers() {
+        viewModelScope.launch {
+            val timers = repository.getAll()
+            val now = System.currentTimeMillis()
+
+            timers.forEach { timer ->
+                if (timer.status != TimerStatus.SCHEDULED) return@forEach
+
+                if (timer.triggerAtMillis <= now) {
+                    val updated = timer.copy(status = TimerStatus.FIRED)
+                    repository.update(updated)
+                } else {
+                    timerEngine.schedule(timer.id, timer.triggerAtMillis)
+                }
+            }
+        }
+    }
+
+    /**
      * Creates a new timer
      *
      * @param triggerTime, future trigger time in milliseconds.
      */
     private fun createTimer(triggerTime: Long) {
-        timer = timerFactory.create(triggerTime - clock.elapsedRealtime(), 1000L,
+        timer = timerFactory.create(
+            triggerTime - System.currentTimeMillis(), // ✅ 修复
+            1000L,
             {
-                _elapsedTime.value = triggerTime - clock.elapsedRealtime()
+                _elapsedTime.value = triggerTime - System.currentTimeMillis()
+
                 if (_elapsedTime.value!! <= 0) {
                     resetTimer()
                 }
@@ -181,7 +227,20 @@ class EggTimerViewModel @Inject constructor(
      */
     private fun cancelNotification() {
         resetTimer()
-        alarmManager.cancel(notifyPendingIntent)
+
+        currentTimerId?.let { id ->
+            timerEngine.cancel(id)
+
+            viewModelScope.launch {
+                val timers = repository.getAll()
+                val timer = timers.find { it.id == id }
+
+                timer?.let {
+                    val updated = it.copy(status = TimerStatus.CANCELLED)
+                    repository.update(updated)
+                }
+            }
+        }
     }
 
     /**
