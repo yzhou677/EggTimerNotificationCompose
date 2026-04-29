@@ -204,9 +204,12 @@ class EggTimerViewModel @Inject constructor(
      * @param triggerTime, future trigger time in milliseconds.
      */
     private fun createTimer(triggerTime: Long) {
-        timer = timerFactory.create(triggerTime - clock.elapsedRealtime(), 1000L,
+        timer = timerFactory.create(
+            triggerTime - System.currentTimeMillis(), // ✅ 修复
+            1000L,
             {
-                _elapsedTime.value = triggerTime - clock.elapsedRealtime()
+                _elapsedTime.value = triggerTime - System.currentTimeMillis()
+
                 if (_elapsedTime.value!! <= 0) {
                     resetTimer()
                 }
