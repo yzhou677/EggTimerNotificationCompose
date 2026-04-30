@@ -29,8 +29,7 @@ class AlarmReceiver : BroadcastReceiver() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val timers = repository.getAll()
-                val timer = timers.find { it.id == timerId }
+                val timer = repository.getById(timerId)
 
                 val label = timer?.label ?: "Timer"
 
