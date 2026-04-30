@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.RemoteViews
+import com.example.android.eggtimernotificationcompose.MainActivity
 import com.example.android.eggtimernotificationcompose.R
 
 class EggTimerWidgetProvider : AppWidgetProvider() {
@@ -31,8 +32,13 @@ class EggTimerWidgetProvider : AppWidgetProvider() {
             val button = RemoteViews(context.packageName, R.layout.widget_button)
             button.setTextViewText(R.id.button_text, softnessLevel)
 
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("eggtimer://eggtimer.com/starteggtimer?softness_level=$softnessLevel"))
-            val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val requestCode = softnessLevel.hashCode()
+            val intent = Intent(context, MainActivity::class.java).apply {
+                action = Intent.ACTION_VIEW
+                data = Uri.parse("eggtimer://eggtimer.com/starteggtimer?softness_level=$softnessLevel")
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val pendingIntent = PendingIntent.getActivity(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             button.setOnClickPendingIntent(R.id.button_text, pendingIntent)
 
             views.addView(containerId, button)
