@@ -10,8 +10,6 @@ import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
 import com.example.android.eggtimernotificationcompose.di.LastEffectiveTimerSelectionPrefs
 import com.example.android.eggtimernotificationcompose.manager.TimerAction
 import com.example.android.eggtimernotificationcompose.model.CustomTimer
-import com.example.android.eggtimernotificationcompose.di.Clock
-import com.example.android.eggtimernotificationcompose.di.Timer
 import com.example.android.eggtimernotificationcompose.engine.TimerEngine
 import com.example.android.eggtimernotificationcompose.model.TimerEntity
 import com.example.android.eggtimernotificationcompose.model.TimerStatus
@@ -19,6 +17,9 @@ import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -31,8 +32,6 @@ class EggTimerViewModel @Inject constructor(
     @LastEffectiveTimerSelectionPrefs private val lastEffectiveTimerSelectionPrefs: SharedPreferences,
     private val gson: Gson,
     private val notificationManager: NotificationManager,
-    private val clock: Clock,
-    private val timerFactory: Timer.Factory,
     private val timerEngine: TimerEngine,
     private val repository: TimerRepository,
     isTesting: Boolean
@@ -60,7 +59,7 @@ class EggTimerViewModel @Inject constructor(
     val eggTimerItems: LiveData<List<String>>
         get() = _eggTimerItems
 
-    private lateinit var timer: Timer
+    private var countdownJob: Job? = null
 
     private var currentTimerId: String? = null
 
@@ -150,7 +149,7 @@ class EggTimerViewModel @Inject constructor(
 
                 timerEngine.schedule(timerId, triggerAtMillis)
 
-                createTimer(triggerAtMillis)
+                startCountdownLoop(triggerAtMillis)
             }
         }
     }
@@ -178,7 +177,8 @@ class EggTimerViewModel @Inject constructor(
      * For each stored timer:
      * - If the timer is not in SCHEDULED state, it is ignored.
      * - If the timer has already expired, it is marked as FIRED in the database.
-     * - If the timer is still valid, it is rescheduled using TimerEngine.
+     * - If the timer is still valid, it is rescheduled using TimerEngine
+     *   and the UI countdown is restored.
      */
     fun restoreTimers() {
         viewModelScope.launch {
@@ -193,34 +193,42 @@ class EggTimerViewModel @Inject constructor(
                     repository.update(updated)
                 } else {
                     timerEngine.schedule(timer.id, timer.triggerAtMillis)
+                    currentTimerId = timer.id
+                    _alarmOn.value = true
+                    startCountdownLoop(timer.triggerAtMillis)
                 }
             }
         }
     }
 
-    /**
-     * Creates a new timer
-     *
-     * @param triggerTime, future trigger time in milliseconds.
-     */
-    private fun createTimer(triggerTime: Long) {
-        timer = timerFactory.create(
-            triggerTime - System.currentTimeMillis(), // ✅ 修复
-            1000L,
-            {
-                _elapsedTime.value = triggerTime - System.currentTimeMillis()
-
-                if (_elapsedTime.value!! <= 0) {
-                    resetTimer()
-                }
-            },
-            {
-                resetTimer()
-            }
-        )
-        timer.start()
+    private fun cancelCountdownJob() {
+        countdownJob?.cancel()
+        countdownJob = null
     }
 
+    /**
+     * Drives UI from wall-clock time so countdown stays correct across background/foreground.
+     */
+    private fun startCountdownLoop(triggerAtMillis: Long) {
+        cancelCountdownJob()
+        countdownJob = viewModelScope.launch {
+            while (isActive) {
+                val remaining = triggerAtMillis - System.currentTimeMillis()
+                if (remaining <= 0L) {
+                    resetUiAfterCountdownFinished()
+                    break
+                }
+                _elapsedTime.value = remaining
+                delay(1000L)
+            }
+        }
+    }
+
+    private fun resetUiAfterCountdownFinished() {
+        cancelCountdownJob()
+        _elapsedTime.value = 0L
+        _alarmOn.value = false
+    }
 
     /**
      * Cancels the alarm, notification and resets the timer
@@ -247,11 +255,14 @@ class EggTimerViewModel @Inject constructor(
      * Resets the timer on screen and sets alarm value false
      */
     private fun resetTimer() {
-        if (::timer.isInitialized) {
-            timer.cancel()
-        }
-        _elapsedTime.value = 0
+        cancelCountdownJob()
+        _elapsedTime.value = 0L
         _alarmOn.value = false
+    }
+
+    override fun onCleared() {
+        cancelCountdownJob()
+        super.onCleared()
     }
 
     /**

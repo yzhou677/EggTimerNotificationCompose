@@ -122,27 +122,6 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideClock(): Clock {
-        return SystemClockImpl()
-    }
-
-    @Provides
-    @Singleton
-    fun provideTimerFactory(): Timer.Factory {
-        return object : Timer.Factory {
-            override fun create(
-                millisInFuture: Long,
-                countDownInterval: Long,
-                onTick: (Long) -> Unit,
-                onFinish: () -> Unit
-            ): Timer {
-                return DefaultTimer(millisInFuture, countDownInterval, onTick, onFinish)
-            }
-        }
-    }
-
-    @Provides
-    @Singleton
     fun provideLogger(): Logger {
         return RealLogger() // Or provide a mock for testing
     }
