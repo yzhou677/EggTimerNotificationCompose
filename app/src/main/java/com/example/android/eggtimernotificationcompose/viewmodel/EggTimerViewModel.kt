@@ -135,10 +135,13 @@ class EggTimerViewModel @Inject constructor(
                 val timerId = UUID.randomUUID().toString()
                 currentTimerId = timerId
 
+                val label = _eggTimerItems.value?.get(timerLengthSelection) ?: "Timer"
+
                 val timer = TimerEntity(
                     id = timerId,
                     triggerAtMillis = triggerAtMillis,
-                    status = TimerStatus.SCHEDULED
+                    status = TimerStatus.SCHEDULED,
+                    label = label
                 )
 
                 // call cancel notification

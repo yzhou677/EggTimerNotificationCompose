@@ -25,19 +25,26 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val timerId = intent.getStringExtra("TIMER_ID") ?: return
 
-        // Show notification
-        notificationManager.sendNotification(
-            "Timer $timerId finished",
-            context,
-            timerId
-        )
-        // Update timer state to FIRED
-        CoroutineScope(Dispatchers.IO).launch {
-            val timers = repository.getAll()
-            val timer = timers.find { it.id == timerId }
+        val pendingResult = goAsync()
 
-            timer?.let {
-                repository.update(it.copy(status = TimerStatus.FIRED))
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val timers = repository.getAll()
+                val timer = timers.find { it.id == timerId }
+
+                val label = timer?.label ?: "Timer"
+
+                notificationManager.sendNotification(
+                    "$label finished",
+                    context,
+                    timerId
+                )
+
+                timer?.let {
+                    repository.update(it.copy(status = TimerStatus.FIRED))
+                }
+            } finally {
+                pendingResult.finish()
             }
         }
     }

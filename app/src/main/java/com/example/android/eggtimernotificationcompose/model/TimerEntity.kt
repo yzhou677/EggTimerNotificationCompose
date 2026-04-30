@@ -6,7 +6,8 @@ import androidx.room.PrimaryKey
 data class TimerEntity(
     @PrimaryKey val id: String,
     val triggerAtMillis: Long,
-    val status: TimerStatus
+    val status: TimerStatus,
+    val label: String
 )
 
 enum class TimerStatus {
