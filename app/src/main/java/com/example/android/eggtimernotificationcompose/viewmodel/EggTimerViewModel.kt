@@ -120,6 +120,7 @@ class EggTimerViewModel @Inject constructor(
      * @param timerLengthSelection, interval timerLengthSelection value.
      */
     override fun startTimer(timerLengthSelection: Int) {
+        cancelCurrentTimer()
         _alarmOn.value?.let {
             if (!it) {
                 _alarmOn.value = true
@@ -230,25 +231,27 @@ class EggTimerViewModel @Inject constructor(
         _alarmOn.value = false
     }
 
-    /**
-     * Cancels the alarm, notification and resets the timer
-     */
-    private fun cancelNotification() {
-        resetTimer()
-
+    private fun cancelCurrentTimer() {
         currentTimerId?.let { id ->
             timerEngine.cancel(id)
 
             viewModelScope.launch {
                 val timers = repository.getAll()
-                val timer = timers.find { it.id == id }
-
-                timer?.let {
-                    val updated = it.copy(status = TimerStatus.CANCELLED)
-                    repository.update(updated)
+                timers.find { it.id == id }?.let {
+                    repository.update(it.copy(status = TimerStatus.CANCELLED))
                 }
             }
         }
+
+        currentTimerId = null
+    }
+
+    /**
+     * Cancels the alarm, notification and resets the timer
+     */
+    private fun cancelNotification() {
+        resetTimer()
+        cancelCurrentTimer()
     }
 
     /**
