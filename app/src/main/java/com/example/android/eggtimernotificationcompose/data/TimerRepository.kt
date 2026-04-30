@@ -10,6 +10,10 @@ class TimerRepository(
         return dao.getAll()
     }
 
+    suspend fun getById(id: String): TimerEntity? {
+        return dao.getById(id)
+    }
+
     suspend fun update(timer: TimerEntity) {
         dao.insert(timer)
     }

@@ -35,8 +35,7 @@ class SnoozeReceiver : BroadcastReceiver() {
 
         // Update DB
         CoroutineScope(Dispatchers.IO).launch {
-            val timers = repository.getAll()
-            val timer = timers.find { it.id == timerId }
+            val timer = repository.getById(timerId)
 
             timer?.let {
                 repository.update(
