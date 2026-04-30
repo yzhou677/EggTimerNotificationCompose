@@ -121,41 +121,39 @@ class EggTimerViewModel @Inject constructor(
      */
     override fun startTimer(timerLengthSelection: Int) {
         cancelCurrentTimer()
-        _alarmOn.value?.let {
-            if (!it) {
-                _alarmOn.value = true
+        // Always schedule here. External entry points (e.g. widget / Assistant) may call
+        // updateLiveDataForTimerStartAction first, which must not block this path via _alarmOn.
+        _alarmOn.value = true
 
-                saveEffectiveTimerSelection(timerLengthSelection)
+        saveEffectiveTimerSelection(timerLengthSelection)
 
-                val selectedInterval = when (timerLengthSelection) {
-                    0 -> second * 10 // For testing only
-                    else -> timerLengthOptions[timerLengthSelection] * minute
-                }
-                val triggerAtMillis = System.currentTimeMillis() + selectedInterval
-                val timerId = UUID.randomUUID().toString()
-                currentTimerId = timerId
-
-                val label = _eggTimerItems.value?.get(timerLengthSelection) ?: "Timer"
-
-                val timer = TimerEntity(
-                    id = timerId,
-                    triggerAtMillis = triggerAtMillis,
-                    status = TimerStatus.SCHEDULED,
-                    label = label
-                )
-
-                // call cancel notification
-                notificationManager.cancelNotifications()
-
-                viewModelScope.launch {
-                    repository.save(timer)
-                }
-
-                timerEngine.schedule(timerId, triggerAtMillis)
-
-                startCountdownLoop(triggerAtMillis)
-            }
+        val selectedInterval = when (timerLengthSelection) {
+            0 -> second * 10 // For testing only
+            else -> timerLengthOptions[timerLengthSelection] * minute
         }
+        val triggerAtMillis = System.currentTimeMillis() + selectedInterval
+        val timerId = UUID.randomUUID().toString()
+        currentTimerId = timerId
+
+        val label = _eggTimerItems.value?.get(timerLengthSelection) ?: "Timer"
+
+        val timer = TimerEntity(
+            id = timerId,
+            triggerAtMillis = triggerAtMillis,
+            status = TimerStatus.SCHEDULED,
+            label = label
+        )
+
+        // call cancel notification
+        notificationManager.cancelNotifications()
+
+        viewModelScope.launch {
+            repository.save(timer)
+        }
+
+        timerEngine.schedule(timerId, triggerAtMillis)
+
+        startCountdownLoop(triggerAtMillis)
     }
 
     /**
@@ -165,7 +163,6 @@ class EggTimerViewModel @Inject constructor(
      */
     override fun updateLiveDataForTimerStartAction(timerLengthSelection: Int) {
         _timeSelection.value = timerLengthSelection
-        _alarmOn.value = true
     }
 
     /**

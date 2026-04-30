@@ -7,7 +7,7 @@ import com.example.android.eggtimernotificationcompose.model.TimerEntity
 
 @Database(
     entities = [TimerEntity::class],
-    version = 1
+    version = 2
 )
 @TypeConverters(TimerConverters::class)
 abstract class AppDatabase : RoomDatabase() {

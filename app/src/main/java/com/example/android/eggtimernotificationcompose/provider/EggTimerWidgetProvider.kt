@@ -32,7 +32,7 @@ class EggTimerWidgetProvider : AppWidgetProvider() {
             val button = RemoteViews(context.packageName, R.layout.widget_button)
             button.setTextViewText(R.id.button_text, softnessLevel)
 
-            val requestCode = softnessLevel.hashCode()
+            val requestCode = softnessLevel.hashCode() and 0x7fffffff
             val intent = Intent(context, MainActivity::class.java).apply {
                 action = Intent.ACTION_VIEW
                 data = Uri.parse("eggtimer://eggtimer.com/starteggtimer?softness_level=$softnessLevel")

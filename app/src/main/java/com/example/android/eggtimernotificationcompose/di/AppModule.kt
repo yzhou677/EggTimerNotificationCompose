@@ -139,7 +139,7 @@ class AppModule {
             context,
             AppDatabase::class.java,
             "timer-db"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides

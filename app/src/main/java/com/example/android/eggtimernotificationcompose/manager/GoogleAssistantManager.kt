@@ -27,8 +27,8 @@ class GoogleAssistantManager @Inject constructor(
         if (timeSelection != -1 && isTesting) timeSelection++
 
         if (timeSelection != -1) {
-            timerAction.startTimer(timeSelection)
             timerAction.updateLiveDataForTimerStartAction(timeSelection)
+            timerAction.startTimer(timeSelection)
         } else {
             showInvalidSoftnessLevelError()
         }
