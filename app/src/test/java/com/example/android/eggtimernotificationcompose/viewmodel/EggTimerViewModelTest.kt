@@ -11,8 +11,6 @@ import com.example.android.eggtimernotificationcompose.R
 import com.example.android.eggtimernotificationcompose.data.TimerRepository
 import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
 import com.example.android.eggtimernotificationcompose.di.LastEffectiveTimerSelectionPrefs
-import com.example.android.eggtimernotificationcompose.di.Clock
-import com.example.android.eggtimernotificationcompose.di.Timer
 import com.example.android.eggtimernotificationcompose.engine.TimerEngine
 import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.gson.Gson
@@ -30,9 +28,10 @@ import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import org.mockito.junit.MockitoJUnitRunner
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import kotlinx.coroutines.runBlocking
 
 @ExperimentalCoroutinesApi
 @RunWith(MockitoJUnitRunner::class)
@@ -67,15 +66,6 @@ class EggTimerViewModelTest {
     private lateinit var notificationManager: NotificationManager
 
     @Mock
-    private lateinit var timer: Timer
-
-    @Mock
-    private lateinit var clock: Clock
-
-    @Mock
-    private lateinit var timerFactory: Timer.Factory
-
-    @Mock
     private lateinit var timerEngine: TimerEngine
 
     @Mock
@@ -105,10 +95,9 @@ class EggTimerViewModelTest {
         `when`(lastEffectiveTimerSelectionEditor.putString(anyString(), anyString())).thenReturn(lastEffectiveTimerSelectionEditor)
         `when`(lastEffectiveTimerSelectionEditor.apply()).then { }
 
-        // Mock the clock
-        `when`(clock.elapsedRealtime()).thenReturn(1000L)
-
-        `when`(timerFactory.create(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(timer)
+        runBlocking {
+            whenever(repository.getAll()).thenReturn(emptyList())
+        }
 
         viewModel = EggTimerViewModel(
             application,
@@ -117,8 +106,6 @@ class EggTimerViewModelTest {
             lastEffectiveTimerSelectionPrefs,
             gson,
             notificationManager,
-            clock,
-            timerFactory,
             timerEngine,
             repository,
             true
