@@ -16,6 +16,12 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class SnoozeReceiver : BroadcastReceiver() {
 
+    companion object {
+        const val ACTION_TIMER_RESCHEDULED =
+            "com.example.android.eggtimernotificationcompose.ACTION_TIMER_RESCHEDULED"
+        const val EXTRA_TIMER_ID = "TIMER_ID"
+    }
+
     @Inject
     lateinit var timerEngine: TimerEngine
 
@@ -29,25 +35,31 @@ class SnoozeReceiver : BroadcastReceiver() {
         val timerId = intent.getStringExtra("TIMER_ID") ?: return
 
         val newTriggerAt = System.currentTimeMillis() + 60_000
+        val pendingResult = goAsync()
 
-        // Reschedule via TimerEngine
-        timerEngine.schedule(timerId, newTriggerAt)
-
-        // Update DB
         CoroutineScope(Dispatchers.IO).launch {
-            val timer = repository.getById(timerId)
-
-            timer?.let {
-                repository.update(
-                    it.copy(
-                        triggerAtMillis = newTriggerAt,
-                        status = TimerStatus.SCHEDULED
-                    )
+            try {
+                repository.withPersistenceLock {
+                    timerEngine.schedule(timerId, newTriggerAt)
+                    repository.getById(timerId)?.let {
+                        repository.update(
+                            it.copy(
+                                triggerAtMillis = newTriggerAt,
+                                status = TimerStatus.SCHEDULED
+                            )
+                        )
+                    }
+                }
+                context.sendBroadcast(
+                    Intent(ACTION_TIMER_RESCHEDULED).apply {
+                        setPackage(context.packageName)
+                        putExtra(EXTRA_TIMER_ID, timerId)
+                    }
                 )
+                notificationManager.cancelAll()
+            } finally {
+                pendingResult.finish()
             }
         }
-
-        // Clear current notification
-        notificationManager.cancelAll()
     }
 }

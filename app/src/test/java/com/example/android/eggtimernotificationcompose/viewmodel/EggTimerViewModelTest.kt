@@ -8,10 +8,12 @@ import android.content.res.Resources
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
 import com.example.android.eggtimernotificationcompose.R
+import com.example.android.eggtimernotificationcompose.data.TimerDao
 import com.example.android.eggtimernotificationcompose.data.TimerRepository
 import com.example.android.eggtimernotificationcompose.di.CustomTimerPrefs
 import com.example.android.eggtimernotificationcompose.di.LastEffectiveTimerSelectionPrefs
 import com.example.android.eggtimernotificationcompose.engine.TimerEngine
+import com.example.android.eggtimernotificationcompose.model.TimerEntity
 import com.example.android.eggtimernotificationcompose.util.cancelNotifications
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -28,11 +30,11 @@ import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import org.mockito.junit.MockitoJUnitRunner
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-import kotlinx.coroutines.runBlocking
-
 @ExperimentalCoroutinesApi
 @RunWith(MockitoJUnitRunner::class)
 class EggTimerViewModelTest {
@@ -68,7 +70,6 @@ class EggTimerViewModelTest {
     @Mock
     private lateinit var timerEngine: TimerEngine
 
-    @Mock
     private lateinit var repository: TimerRepository
 
     private lateinit var viewModel: EggTimerViewModel
@@ -95,9 +96,7 @@ class EggTimerViewModelTest {
         `when`(lastEffectiveTimerSelectionEditor.putString(anyString(), anyString())).thenReturn(lastEffectiveTimerSelectionEditor)
         `when`(lastEffectiveTimerSelectionEditor.apply()).then { }
 
-        runBlocking {
-            whenever(repository.getAll()).thenReturn(emptyList())
-        }
+        repository = TimerRepository(InMemoryTimerDao())
 
         viewModel = EggTimerViewModel(
             application,
@@ -166,5 +165,24 @@ class EggTimerViewModelTest {
 
         verify(timerEngine).cancel(anyString())
         verify(notificationManager).cancelNotifications()
+    }
+
+    /** In-process stand-in for Room so [TimerRepository.withPersistenceLock] runs real code. */
+    private class InMemoryTimerDao : TimerDao {
+        private val timers = mutableMapOf<String, TimerEntity>()
+
+        override suspend fun getAll(): List<TimerEntity> = timers.values.toList()
+
+        override suspend fun getById(timerId: String): TimerEntity? = timers[timerId]
+
+        override fun observeTimers(): Flow<List<TimerEntity>> = emptyFlow()
+
+        override suspend fun insert(timer: TimerEntity) {
+            timers[timer.id] = timer
+        }
+
+        override suspend fun delete(id: String) {
+            timers.remove(id)
+        }
     }
 }

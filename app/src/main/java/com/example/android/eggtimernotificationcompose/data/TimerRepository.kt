@@ -1,10 +1,21 @@
 package com.example.android.eggtimernotificationcompose.data
 
 import com.example.android.eggtimernotificationcompose.model.TimerEntity
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class TimerRepository(
     private val dao: TimerDao
 ) {
+
+    private val persistenceMutex = Mutex()
+
+    /**
+     * Serializes timer row writes across ViewModel and BroadcastReceivers so
+     * save/update/cancel cannot reorder and resurrect stale SCHEDULED rows.
+     */
+    suspend fun <T> withPersistenceLock(block: suspend () -> T): T =
+        persistenceMutex.withLock { block() }
 
     suspend fun getAll(): List<TimerEntity> {
         return dao.getAll()

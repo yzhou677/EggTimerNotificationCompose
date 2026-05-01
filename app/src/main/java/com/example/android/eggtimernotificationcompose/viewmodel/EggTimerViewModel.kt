@@ -21,6 +21,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.UUID
 import javax.inject.Inject
 
@@ -62,6 +64,9 @@ class EggTimerViewModel @Inject constructor(
     private var countdownJob: Job? = null
 
     private var currentTimerId: String? = null
+
+    /** Serializes full start flows so two rapid starts cannot interleave countdown vs cancel. */
+    private val startTimerSequenceMutex = Mutex()
 
     init {
         _alarmOn.value = false
@@ -120,7 +125,6 @@ class EggTimerViewModel @Inject constructor(
      * @param timerLengthSelection, interval timerLengthSelection value.
      */
     override fun startTimer(timerLengthSelection: Int) {
-        cancelCurrentTimer()
         // Always schedule here. External entry points (e.g. widget / Assistant) may call
         // updateLiveDataForTimerStartAction first, which must not block this path via _alarmOn.
         _alarmOn.value = true
@@ -133,7 +137,6 @@ class EggTimerViewModel @Inject constructor(
         }
         val triggerAtMillis = System.currentTimeMillis() + selectedInterval
         val timerId = UUID.randomUUID().toString()
-        currentTimerId = timerId
 
         val label = _eggTimerItems.value?.get(timerLengthSelection) ?: "Timer"
 
@@ -148,12 +151,17 @@ class EggTimerViewModel @Inject constructor(
         notificationManager.cancelNotifications()
 
         viewModelScope.launch {
-            repository.save(timer)
+            startTimerSequenceMutex.withLock {
+                cancelCountdownJob()
+                repository.withPersistenceLock {
+                    cancelCurrentTimerLocked()
+                    currentTimerId = timerId
+                    repository.save(timer)
+                    timerEngine.schedule(timerId, triggerAtMillis)
+                }
+                startCountdownLoop(triggerAtMillis)
+            }
         }
-
-        timerEngine.schedule(timerId, triggerAtMillis)
-
-        startCountdownLoop(triggerAtMillis)
     }
 
     /**
@@ -183,21 +191,50 @@ class EggTimerViewModel @Inject constructor(
      */
     fun restoreTimers() {
         viewModelScope.launch {
-            val timers = repository.getAll()
-            val now = System.currentTimeMillis()
+            val toResume = repository.withPersistenceLock {
+                val timers = repository.getAll()
+                val now = System.currentTimeMillis()
+                val scheduled = timers.filter { it.status == TimerStatus.SCHEDULED }
+                val (expired, future) = scheduled.partition { it.triggerAtMillis <= now }
 
-            timers.forEach { timer ->
-                if (timer.status != TimerStatus.SCHEDULED) return@forEach
-
-                if (timer.triggerAtMillis <= now) {
-                    val updated = timer.copy(status = TimerStatus.FIRED)
-                    repository.update(updated)
-                } else {
-                    timerEngine.schedule(timer.id, timer.triggerAtMillis)
-                    currentTimerId = timer.id
-                    _alarmOn.value = true
-                    startCountdownLoop(timer.triggerAtMillis)
+                expired.forEach { timer ->
+                    repository.update(timer.copy(status = TimerStatus.FIRED))
                 }
+
+                if (future.isEmpty()) {
+                    return@withPersistenceLock null
+                }
+
+                val keep = future.minByOrNull { it.triggerAtMillis }!!
+                future.filter { it.id != keep.id }.forEach { stale ->
+                    timerEngine.cancel(stale.id)
+                    repository.update(stale.copy(status = TimerStatus.CANCELLED))
+                }
+                keep
+            }
+
+            if (toResume != null) {
+                timerEngine.schedule(toResume.id, toResume.triggerAtMillis)
+                currentTimerId = toResume.id
+                _alarmOn.value = true
+                startCountdownLoop(toResume.triggerAtMillis)
+            }
+        }
+    }
+
+    /**
+     * Called when [SnoozeReceiver] (or similar) updates [TimerEntity.triggerAtMillis] in the DB.
+     * Keeps the countdown aligned with Room without a Flow refactor.
+     */
+    fun onTimerRescheduledExternally(timerId: String) {
+        viewModelScope.launch {
+            startTimerSequenceMutex.withLock {
+                val entity = repository.getById(timerId) ?: return@withLock
+                if (entity.status != TimerStatus.SCHEDULED) return@withLock
+                cancelCountdownJob()
+                currentTimerId = timerId
+                _alarmOn.value = true
+                startCountdownLoop(entity.triggerAtMillis)
             }
         }
     }
@@ -231,18 +268,14 @@ class EggTimerViewModel @Inject constructor(
         _alarmOn.value = false
     }
 
-    private fun cancelCurrentTimer() {
+    private suspend fun cancelCurrentTimerLocked() {
         currentTimerId?.let { id ->
             timerEngine.cancel(id)
-
-            viewModelScope.launch {
-                val timers = repository.getAll()
-                timers.find { it.id == id }?.let {
-                    repository.update(it.copy(status = TimerStatus.CANCELLED))
-                }
+            val timers = repository.getAll()
+            timers.find { it.id == id }?.let {
+                repository.update(it.copy(status = TimerStatus.CANCELLED))
             }
         }
-
         currentTimerId = null
     }
 
@@ -250,17 +283,18 @@ class EggTimerViewModel @Inject constructor(
      * Cancels the alarm, notification and resets the timer
      */
     private fun cancelNotification() {
-        resetTimer()
-        cancelCurrentTimer()
-    }
-
-    /**
-     * Resets the timer on screen and sets alarm value false
-     */
-    private fun resetTimer() {
-        cancelCountdownJob()
-        _elapsedTime.value = 0L
-        _alarmOn.value = false
+        viewModelScope.launch {
+            startTimerSequenceMutex.withLock {
+                repository.withPersistenceLock {
+                    cancelCurrentTimerLocked()
+                }
+                // After persistence: stop any countdown [startTimer] may have started while this
+                // coroutine was waiting — avoids UI counting down with no scheduled alarm.
+                cancelCountdownJob()
+                _elapsedTime.value = 0L
+                _alarmOn.value = false
+            }
+        }
     }
 
     override fun onCleared() {
