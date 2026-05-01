@@ -1,6 +1,9 @@
 package com.example.android.eggtimernotificationcompose
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -50,7 +53,9 @@ import com.example.android.eggtimernotificationcompose.view.ProductsListScreen
 import com.example.android.eggtimernotificationcompose.view.RecipesListScreen
 import com.example.android.eggtimernotificationcompose.theme.EggTimerNotificationComposeTheme
 import com.example.android.eggtimernotificationcompose.theme.LocalSpacing
+import com.example.android.eggtimernotificationcompose.receiver.SnoozeReceiver
 import com.example.android.eggtimernotificationcompose.viewmodel.EggTimerViewModel
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -59,6 +64,13 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val timerAction: EggTimerViewModel by viewModels()
+
+    private val timerRescheduleReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val id = intent?.getStringExtra(SnoozeReceiver.EXTRA_TIMER_ID) ?: return
+            timerAction.onTimerRescheduledExternally(id)
+        }
+    }
 
     @Inject
     lateinit var notificationChannelManager: NotificationChannelManager
@@ -90,6 +102,21 @@ class MainActivity : ComponentActivity() {
             }
         }
         handleIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ContextCompat.registerReceiver(
+            this,
+            timerRescheduleReceiver,
+            IntentFilter(SnoozeReceiver.ACTION_TIMER_RESCHEDULED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    override fun onStop() {
+        unregisterReceiver(timerRescheduleReceiver)
+        super.onStop()
     }
 
     /**
