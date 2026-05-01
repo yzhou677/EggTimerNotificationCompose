@@ -44,7 +44,14 @@ fun EggTimerScreen(
     val elapsedTime by viewModel.elapsedTime.observeAsState(0L)
     val timeSelection by viewModel.timeSelection.observeAsState(0)
     val isAlarmOn by viewModel.isAlarmOn.observeAsState(false)
+    val showTimerFinishedZero by viewModel.showTimerFinishedZero.observeAsState(false)
     val items by viewModel.eggTimerItems.observeAsState(emptyList())
+
+    val displayMillis = when {
+        isAlarmOn -> elapsedTime
+        showTimerFinishedZero -> 0L
+        else -> viewModel.getSelectedDurationMillis(timeSelection)
+    }
 
     Column(
         modifier = modifier
@@ -98,7 +105,7 @@ fun EggTimerScreen(
         Spacer(modifier = Modifier.height(spacing.extraLarge))
 
         BasicText(
-            text = setElapsedTime(elapsedTime),
+            text = setElapsedTime(displayMillis),
             style = MaterialTheme.typography.headlineMedium.copy(
                 color = MaterialTheme.colorScheme.onBackground
             ),

@@ -57,6 +57,11 @@ class EggTimerViewModel @Inject constructor(
     val isAlarmOn: LiveData<Boolean>
         get() = _alarmOn
 
+    /** When true and alarm is off, UI shows 00:00 (countdown reached zero); cancel/idle use selected duration instead. */
+    private val _showTimerFinishedZero = MutableLiveData(false)
+    val showTimerFinishedZero: LiveData<Boolean>
+        get() = _showTimerFinishedZero
+
     private var _eggTimerItems = MutableLiveData<List<String>>()
     val eggTimerItems: LiveData<List<String>>
         get() = _eggTimerItems
@@ -98,6 +103,15 @@ class EggTimerViewModel @Inject constructor(
         this.timerLengthOptions = timerLengthOptions
     }
 
+    /** Milliseconds for the dropdown index; matches [startTimer] interval rules (for display when alarm is off). */
+    fun getSelectedDurationMillis(selectionIndex: Int): Long {
+        if (selectionIndex !in timerLengthOptions.indices) return 0L
+        return when (selectionIndex) {
+            0 -> second * 10 // For testing only — same branch as [startTimer]
+            else -> timerLengthOptions[selectionIndex] * minute
+        }
+    }
+
     /**
      * Turns on or off the alarm
      *
@@ -116,6 +130,7 @@ class EggTimerViewModel @Inject constructor(
      * @param timerLengthSelection, interval timerLengthSelection value.
      */
     fun setTimeSelected(timerLengthSelection: Int) {
+        _showTimerFinishedZero.value = false
         _timeSelection.value = timerLengthSelection
     }
 
@@ -127,6 +142,7 @@ class EggTimerViewModel @Inject constructor(
     override fun startTimer(timerLengthSelection: Int) {
         // Always schedule here. External entry points (e.g. widget / Assistant) may call
         // updateLiveDataForTimerStartAction first, which must not block this path via _alarmOn.
+        _showTimerFinishedZero.value = false
         _alarmOn.value = true
 
         saveEffectiveTimerSelection(timerLengthSelection)
@@ -216,6 +232,7 @@ class EggTimerViewModel @Inject constructor(
             if (toResume != null) {
                 timerEngine.schedule(toResume.id, toResume.triggerAtMillis)
                 currentTimerId = toResume.id
+                _showTimerFinishedZero.value = false
                 _alarmOn.value = true
                 startCountdownLoop(toResume.triggerAtMillis)
             }
@@ -233,6 +250,7 @@ class EggTimerViewModel @Inject constructor(
                 if (entity.status != TimerStatus.SCHEDULED) return@withLock
                 cancelCountdownJob()
                 currentTimerId = timerId
+                _showTimerFinishedZero.value = false
                 _alarmOn.value = true
                 startCountdownLoop(entity.triggerAtMillis)
             }
@@ -266,6 +284,7 @@ class EggTimerViewModel @Inject constructor(
         cancelCountdownJob()
         _elapsedTime.value = 0L
         _alarmOn.value = false
+        _showTimerFinishedZero.value = true
     }
 
     private suspend fun cancelCurrentTimerLocked() {
@@ -293,6 +312,7 @@ class EggTimerViewModel @Inject constructor(
                 cancelCountdownJob()
                 _elapsedTime.value = 0L
                 _alarmOn.value = false
+                _showTimerFinishedZero.value = false
             }
         }
     }
@@ -340,6 +360,7 @@ class EggTimerViewModel @Inject constructor(
      * @param index, index of the custom timer to be deleted.
      */
     fun deleteCustomTimer(index: Int) {
+        _showTimerFinishedZero.value = false
         val updatedItems = _eggTimerItems.value.orEmpty().toMutableList().apply {
             removeAt(index)
         }
